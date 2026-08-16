@@ -26,8 +26,16 @@ jobs:
         with:
           gradle-version: 8.9
 
+      - name: Show Gradle and env info
+        run: |
+          gradle --version
+          cat settings.gradle
+          cat build.gradle
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
