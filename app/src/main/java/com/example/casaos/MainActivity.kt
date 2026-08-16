@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.content.*
 import android.graphics.Color
 import android.net.Uri
+import android.view.autofill.AutofillManager
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
@@ -39,14 +40,24 @@ class MainActivity : Activity() {
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            web.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
+        }
+
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean = false
             override fun onReceivedError(v: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame) showErrorOverlay()
             }
+            override fun onPageFinished(v: WebView, url: String?) {
+                super.onPageFinished(v, url)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val afm = getSystemService(AutofillManager::class.java)
+                    afm?.commit()
+                }
+            }
         }
         setupLayout()
-        web.setOnLongClickListener { false }
     }
 
     private fun setupLayout() {
@@ -60,25 +71,41 @@ class MainActivity : Activity() {
         root.addView(web, webParams)
 
         val density = resources.displayMetrics.density
-        val buttonSize = (48 * density).toInt()
-        val margin = (16 * density).toInt()
+        val buttonSize = (40 * density).toInt()
 
         val settingsButton = Button(this).apply {
             text = "⚙"
-            textSize = 20f
+            textSize = 18f
             setTextColor(Color.BLACK)
             setBackgroundColor(Color.WHITE)
             alpha = 0.9f
         }
         val buttonParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
             gravity = Gravity.TOP or Gravity.END
-            rightMargin = margin
-            topMargin = margin + (24 * density).toInt()
+            rightMargin = 0
+            topMargin = 0
         }
         settingsButton.setOnClickListener { showSettings() }
         root.addView(settingsButton, buttonParams)
 
         setContentView(root)
+
+        settingsButton.postDelayed({
+            settingsButton.animate().alpha(0f).setDuration(400).withEndAction {
+                settingsButton.visibility = View.GONE
+            }.start()
+        }, 3000)
+
+        web.setOnLongClickListener {
+            settingsButton.visibility = View.VISIBLE
+            settingsButton.alpha = 0.9f
+            settingsButton.postDelayed({
+                settingsButton.animate().alpha(0f).setDuration(400).withEndAction {
+                    settingsButton.visibility = View.GONE
+                }.start()
+            }, 3000)
+            true
+        }
     }
 
     private fun openSaved() {
