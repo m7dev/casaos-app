@@ -66,14 +66,14 @@ class MainActivity : Activity() {
         val settingsButton = Button(this).apply {
             text = "⚙"
             textSize = 20f
-            setTextColor(Color.WHITE)
-            setBackgroundColor(Color.parseColor("#4CAF50"))
-            alpha = 0.85f
+            setTextColor(Color.BLACK)
+            setBackgroundColor(Color.WHITE)
+            alpha = 0.9f
         }
         val buttonParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
-            gravity = Gravity.BOTTOM or Gravity.END
+            gravity = Gravity.TOP or Gravity.END
             rightMargin = margin
-            bottomMargin = margin
+            topMargin = margin + (24 * density).toInt()
         }
         settingsButton.setOnClickListener { showSettings() }
         root.addView(settingsButton, buttonParams)
