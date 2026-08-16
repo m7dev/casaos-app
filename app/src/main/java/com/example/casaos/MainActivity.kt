@@ -13,7 +13,7 @@ import android.widget.*
 class MainActivity : Activity() {
     private lateinit var web: WebView
     private val prefs by lazy { getSharedPreferences("casaos", MODE_PRIVATE) }
-    private val defaultAddress = "192.168.1.100"
+    private val defaultAddress = "192.168.0.100"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +110,7 @@ class MainActivity : Activity() {
         }
 
         val input = EditText(this).apply {
-            hint = "192.168.1.100:80"
+            hint = "192.168.0.100:80"
             setSingleLine(true)
             setText(prefs.getString("address", defaultAddress))
             selectAll()
@@ -118,7 +118,7 @@ class MainActivity : Activity() {
         box.addView(input)
 
         val info = TextView(this).apply {
-            text = "\nПриклади:\n192.168.1.100\n192.168.1.100:80\n192.168.1.100:8080\n\nМожна також вказати http:// або https://."
+            text = "\nПриклади:\n192.168.0.100\n192.168.0.100:80\n192.168.0.100:8080\n\nМожна також вказати http:// або https://."
             textSize = 14f
         }
         box.addView(info)
