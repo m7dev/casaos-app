@@ -45,8 +45,40 @@ class MainActivity : Activity() {
                 if (req.isForMainFrame) showErrorOverlay()
             }
         }
-        setContentView(web)
+        setupLayout()
         web.setOnLongClickListener { false }
+    }
+
+    private fun setupLayout() {
+        val root = FrameLayout(this)
+        root.setBackgroundColor(Color.BLACK)
+
+        val webParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        root.addView(web, webParams)
+
+        val density = resources.displayMetrics.density
+        val buttonSize = (48 * density).toInt()
+        val margin = (16 * density).toInt()
+
+        val settingsButton = Button(this).apply {
+            text = "⚙"
+            textSize = 20f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#4CAF50"))
+            alpha = 0.85f
+        }
+        val buttonParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
+            gravity = Gravity.BOTTOM or Gravity.END
+            rightMargin = margin
+            bottomMargin = margin
+        }
+        settingsButton.setOnClickListener { showSettings() }
+        root.addView(settingsButton, buttonParams)
+
+        setContentView(root)
     }
 
     private fun openSaved() {
