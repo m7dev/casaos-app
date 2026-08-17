@@ -5,14 +5,29 @@ import android.os.Bundle
 import android.content.*
 import android.graphics.Color
 import android.net.Uri
+import android.text.InputType
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.widget.*
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import org.json.JSONObject
 
 class MainActivity : Activity() {
     private lateinit var web: WebView
-    private val prefs by lazy { getSharedPreferences("shelterx", MODE_PRIVATE) }
+    private val prefs by lazy {
+        val masterKey = MasterKey.Builder(this)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            this,
+            "shelterx_secure",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
     private val defaultAddress = "192.168.0.100"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,6 +62,10 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean = false
             override fun onReceivedError(v: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame) showErrorOverlay()
+            }
+            override fun onPageFinished(v: WebView, url: String?) {
+                super.onPageFinished(v, url)
+                tryAutoLogin()
             }
         }
         setupLayout()
@@ -116,6 +135,57 @@ class MainActivity : Activity() {
         } catch (_: Exception) { null }
     }
 
+    private fun tryAutoLogin() {
+        val username = prefs.getString("username", "") ?: ""
+        val password = prefs.getString("password", "") ?: ""
+        if (username.isEmpty() && password.isEmpty()) return
+
+        val userJs = JSONObject.quote(username)
+        val passJs = JSONObject.quote(password)
+        val js = """
+            (function() {
+                var attempts = 0;
+                function setValue(el, value) {
+                    el.value = value;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                function findSubmit(scope) {
+                    var btn = scope.querySelector('button[type=submit], input[type=submit]');
+                    if (btn) return btn;
+                    var buttons = scope.querySelectorAll('button');
+                    for (var i = 0; i < buttons.length; i++) {
+                        if (/login|sign.?in|увійти|вхід/i.test(buttons[i].textContent || '')) return buttons[i];
+                    }
+                    return null;
+                }
+                function tryFill() {
+                    attempts++;
+                    var scope = document.querySelector('.login-panel') || document;
+                    var pass = scope.querySelector('input[type=password]');
+                    if (!pass) {
+                        if (attempts < 20) setTimeout(tryFill, 300);
+                        return;
+                    }
+                    if (pass.value) return;
+                    var user = scope.querySelector('input[type=text], input[type=email]');
+                    if (user) setValue(user, $userJs);
+                    setValue(pass, $passJs);
+                    var form = pass.form;
+                    if (form) {
+                        if (typeof form.requestSubmit === 'function') form.requestSubmit();
+                        else form.submit();
+                        return;
+                    }
+                    var btn = findSubmit(scope);
+                    if (btn) btn.click();
+                }
+                tryFill();
+            })();
+        """.trimIndent()
+        web.evaluateJavascript(js, null)
+    }
+
     private fun showErrorOverlay() {
         runOnUiThread {
             Toast.makeText(this, "Не вдалося підключитися до сервера", Toast.LENGTH_LONG).show()
@@ -136,8 +206,23 @@ class MainActivity : Activity() {
         }
         box.addView(input)
 
+        val userInput = EditText(this).apply {
+            hint = "Логін (необов'язково)"
+            setSingleLine(true)
+            setText(prefs.getString("username", ""))
+        }
+        box.addView(userInput)
+
+        val passInput = EditText(this).apply {
+            hint = "Пароль (необов'язково)"
+            setSingleLine(true)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setText(prefs.getString("password", ""))
+        }
+        box.addView(passInput)
+
         val info = TextView(this).apply {
-            text = "\nПриклади:\n192.168.0.100\n192.168.0.100:80\n192.168.0.100:8080\n\nМожна також вказати http:// або https://."
+            text = "\nПриклади:\n192.168.0.100\n192.168.0.100:80\n192.168.0.100:8080\n\nМожна також вказати http:// або https://.\n\nЯкщо вказано логін і пароль, вони автоматично підставляються у форму входу на сторінці (зберігаються зашифровано)."
             textSize = 14f
         }
         box.addView(info)
@@ -157,7 +242,11 @@ class MainActivity : Activity() {
                             input.error = "Неправильна адреса"
                             return@setOnClickListener
                         }
-                        prefs.edit().putString("address", value).apply()
+                        prefs.edit()
+                            .putString("address", value)
+                            .putString("username", userInput.text.toString())
+                            .putString("password", passInput.text.toString())
+                            .apply()
                         web.loadUrl(url)
                         dialog.dismiss()
                     }
