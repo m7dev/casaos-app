@@ -1,4 +1,4 @@
-package com.example.casaos
+package com.example.shelterx
 
 import android.app.*
 import android.os.Bundle
@@ -13,7 +13,7 @@ import android.widget.*
 
 class MainActivity : Activity() {
     private lateinit var web: WebView
-    private val prefs by lazy { getSharedPreferences("casaos", MODE_PRIVATE) }
+    private val prefs by lazy { getSharedPreferences("shelterx", MODE_PRIVATE) }
     private val defaultAddress = "192.168.0.100"
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,7 +77,7 @@ class MainActivity : Activity() {
             text = "⚙"
             textSize = 18f
             setTextColor(Color.BLACK)
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(Color.TRANSPARENT)
             alpha = 0.9f
         }
         val buttonParams = FrameLayout.LayoutParams(buttonSize, buttonSize).apply {
@@ -126,7 +126,7 @@ class MainActivity : Activity() {
 
     private fun showErrorOverlay() {
         runOnUiThread {
-            Toast.makeText(this, "Не вдалося підключитися до CasaOS", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Не вдалося підключитися до сервера", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -151,7 +151,7 @@ class MainActivity : Activity() {
         box.addView(info)
 
         AlertDialog.Builder(this)
-            .setTitle("Налаштування CasaOS")
+            .setTitle("Налаштування ShelterX")
             .setView(box)
             .setNegativeButton("Скасувати", null)
             .setNeutralButton("Оновити", null)
