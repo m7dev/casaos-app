@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.content.*
 import android.graphics.Color
 import android.net.Uri
-import android.view.autofill.AutofillManager
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
@@ -48,13 +47,6 @@ class MainActivity : Activity() {
             override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean = false
             override fun onReceivedError(v: WebView, req: WebResourceRequest, err: WebResourceError) {
                 if (req.isForMainFrame) showErrorOverlay()
-            }
-            override fun onPageFinished(v: WebView, url: String?) {
-                super.onPageFinished(v, url)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    val afm = getSystemService(AutofillManager::class.java)
-                    afm?.commit()
-                }
             }
         }
         setupLayout()
